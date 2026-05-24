@@ -5,6 +5,11 @@ import {
 } from "react";
 
 import ExcelJS from "exceljs";
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import InputModal from "./InputModal";
 
 import {
   Upload,
@@ -28,7 +33,10 @@ import SheetGrid from "./SheetGrid";
 import SheetToolbar from "./SheetToolbar";
 
 export default function ExcelUploader() {
+
   const {
+
+
     setLaptops,
 
     sheetsData,
@@ -36,7 +44,38 @@ export default function ExcelUploader() {
 
     activeSheetName,
     setActiveSheetName,
+
   } = useApp();
+
+  const navigate =
+    useNavigate();
+  // =========================
+  // MODAL STATE
+  // =========================
+
+  const [
+    modalOpen,
+    setModalOpen,
+  ] = useState(false);
+
+  const [
+    modalType,
+    setModalType,
+  ] = useState("");
+
+  const [
+    modalValue,
+    setModalValue,
+  ] = useState("");
+
+  const [
+    pendingColumn,
+    setPendingColumn,
+  ] = useState("");
+
+  // =========================
+  // GRID STATE
+  // =========================
 
   const [
     rowData,
@@ -58,77 +97,26 @@ export default function ExcelUploader() {
     setSelectedRows,
   ] = useState([]);
 
-  useEffect(() => {
-    if (!activeSheetName)
-      return;
+  // =========================
+  // SYNC
+  // =========================
 
-    const currentSheet =
-      sheetsData.find(
-        (sheet) =>
-          sheet.name ===
-          activeSheetName
-      );
+  const [
+    syncFilePath,
+  ] = useState(
+    localStorage.getItem(
+      "syncFilePath"
+    ) || ""
+  );
 
-    if (!currentSheet)
-      return;
+  // =========================
+  // LOAD WORKBOOK
+  // =========================
 
-    setRowData(
-      currentSheet.rowData || []
-    );
-
-    setColumnDefs(
-      currentSheet.columnDefs || []
-    );
-  }, [
-    activeSheetName,
-    sheetsData,
-  ]);
-
-  const updateCurrentSheet = (
-    updatedRows,
-    updatedColumns
-  ) => {
-    const updatedSheets =
-      sheetsData.map((sheet) => {
-        if (
-          sheet.name !==
-          activeSheetName
-        ) {
-          return sheet;
-        }
-
-        return {
-          ...sheet,
-
-          rowData:
-            updatedRows,
-
-          columnDefs:
-            updatedColumns,
-        };
-      });
-
-    setSheetsData(
-      updatedSheets
-    );
-  };
-
-  const handleFileUpload =
-    async (event) => {
-      const file =
-        event.target.files[0];
-
-      if (!file) return;
-
-      const workbook =
-        new ExcelJS.Workbook();
-
-      const arrayBuffer =
-        await file.arrayBuffer();
-
-      await workbook.xlsx.load(
-        arrayBuffer
-      );
+  const loadWorkbook =
+    async (
+      workbook
+    ) => {
 
       const parsedLaptops =
         parseLaptopSheets(
@@ -141,13 +129,17 @@ export default function ExcelUploader() {
 
       const parsedSheets =
         workbook.worksheets.map(
-          (worksheet) => {
+          (
+            worksheet
+          ) => {
+
             const parsed =
               parseWorksheet(
                 worksheet
               );
 
             return {
+
               name:
                 worksheet.name,
 
@@ -167,305 +159,240 @@ export default function ExcelUploader() {
       if (
         parsedSheets.length > 0
       ) {
+
         setActiveSheetName(
-          parsedSheets[0].name
+          parsedSheets[0]
+            .name
         );
       }
     };
 
-  const addRow = () => {
-    const newRow = {
-      __rowId:
-        crypto.randomUUID?.() ||
-        `${Date.now()}`,
-    };
+  // =========================
+  // LOAD FROM PATH
+  // =========================
 
-    columnDefs.forEach(
-      (col) => {
-        newRow[col.field] =
-          "";
-      }
-    );
+  const loadWorkbookFromPath =
+    async (
+      filePath
+    ) => {
 
-    const updatedRows = [
-      newRow,
-      ...rowData,
-    ];
-
-    setRowData(
-      updatedRows
-    );
-
-    updateCurrentSheet(
-      updatedRows,
-      columnDefs
-    );
-  };
-
-  // FIXED DELETE ROWS
-  const deleteRows = () => {
-    if (
-      !selectedRows.length
-    ) {
-      return;
-    }
-
-    const selectedIds =
-      selectedRows.map(
-        (row) =>
-          row.__rowId
-      );
-
-    const updatedRows =
-      rowData.filter(
-        (row) =>
-          !selectedIds.includes(
-            row.__rowId
-          )
-      );
-
-    setSelectedRows([]);
-
-    setRowData(
-      updatedRows
-    );
-
-    updateCurrentSheet(
-      updatedRows,
-      columnDefs
-    );
-  };
-
-  const addColumn = () => {
-    const columnName =
-      prompt(
-        "Column name"
-      );
-
-    if (!columnName)
-      return;
-
-    const trimmedName =
-      columnName.trim();
-
-    const exists =
-      columnDefs.find(
-        (col) =>
-          col.field.toLowerCase() ===
-          trimmedName.toLowerCase()
-      );
-
-    if (exists) {
-      alert(
-        "Column already exists"
-      );
-
-      return;
-    }
-
-    const newColumn = {
-      field: trimmedName,
-
-      headerName:
-        trimmedName,
-
-      editable: true,
-
-      sortable: true,
-
-      filter: true,
-
-      floatingFilter: true,
-
-      resizable: true,
-
-      minWidth: 220,
-
-      width: 280,
-    };
-
-    const updatedColumns = [
-      ...columnDefs,
-      newColumn,
-    ];
-
-    const updatedRows =
-      rowData.map((row) => ({
-        ...row,
-        [trimmedName]: "",
-      }));
-
-    setColumnDefs(
-      updatedColumns
-    );
-
-    setRowData(
-      updatedRows
-    );
-
-    updateCurrentSheet(
-      updatedRows,
-      updatedColumns
-    );
-  };
-
-  const deleteColumn =
-    () => {
-      const columnName =
-        prompt(
-          "Enter exact column name"
-        );
-
-      if (!columnName)
+      if (
+        !window.electronAPI
+      ) {
         return;
+      }
 
-      const updatedColumns =
-        columnDefs.filter(
-          (col) =>
-            col.field !==
-            columnName
+      try {
+
+        const workbook =
+          new ExcelJS.Workbook();
+
+        const buffer =
+          await window.electronAPI.readExcelFile(
+            filePath
+          );
+
+        await workbook.xlsx.load(
+          buffer
         );
 
-      const updatedRows =
-        rowData.map(
-          (row) => {
-            const updated =
-              {
-                ...row,
-              };
-
-            delete updated[
-              columnName
-            ];
-
-            return updated;
-          }
+        await loadWorkbook(
+          workbook
         );
 
-      setColumnDefs(
-        updatedColumns
-      );
+        console.log(
+          "Workbook auto synced"
+        );
 
-      setRowData(
-        updatedRows
-      );
+      } catch (error) {
 
-      updateCurrentSheet(
-        updatedRows,
-        updatedColumns
-      );
+        console.error(
+          "Auto sync failed",
+          error
+        );
+      }
     };
 
-  const renameColumn = (
-    oldField
-  ) => {
-    const newField =
-      prompt(
-        "Rename column",
-        oldField
-      );
+  // =========================
+  // WATCH EXCEL FILE
+  // =========================
+
+  useEffect(() => {
 
     if (
-      !newField ||
-      newField === oldField
+      !window.electronAPI
     ) {
       return;
     }
 
-    const trimmedName =
-      newField.trim();
-
-    const exists =
-      columnDefs.find(
-        (col) =>
-          col.field ===
-          trimmedName
-      );
-
-    if (exists) {
-      alert(
-        "Column already exists"
-      );
-
+    if (
+      !syncFilePath
+    ) {
       return;
     }
 
-    const updatedColumns =
-      columnDefs.map(
-        (col) => {
-          if (
-            col.field ===
-            oldField
-          ) {
-            return {
-              ...col,
-
-              field:
-                trimmedName,
-
-              headerName:
-                trimmedName,
-            };
-          }
-
-          return col;
-        }
-      );
-
-    const updatedRows =
-      rowData.map(
-        (row) => {
-          const updated =
-            {
-              ...row,
-            };
-
-          updated[
-            trimmedName
-          ] =
-            updated[
-              oldField
-            ];
-
-          delete updated[
-            oldField
-          ];
-
-          return updated;
-        }
-      );
-
-    setColumnDefs(
-      updatedColumns
+    loadWorkbookFromPath(
+      syncFilePath
     );
+
+    window.electronAPI.onExcelUpdated(
+      async (
+        filePath
+      ) => {
+
+        console.log(
+          "Workbook changed"
+        );
+
+        await loadWorkbookFromPath(
+          filePath
+        );
+      }
+    );
+
+  }, []);
+
+  // =========================
+  // UPDATE CURRENT SHEET
+  // =========================
+
+  useEffect(() => {
+
+    if (
+      !activeSheetName
+    ) {
+      return;
+    }
+
+    const currentSheet =
+      sheetsData.find(
+        (
+          sheet
+        ) =>
+          sheet.name ===
+          activeSheetName
+      );
+
+    if (
+      !currentSheet
+    ) {
+      return;
+    }
 
     setRowData(
-      updatedRows
+      currentSheet.rowData ||
+      []
     );
 
-    updateCurrentSheet(
+    setColumnDefs(
+      currentSheet.columnDefs ||
+      []
+    );
+
+  }, [
+    activeSheetName,
+    sheetsData,
+  ]);
+
+  const updateCurrentSheet =
+    (
       updatedRows,
       updatedColumns
-    );
-  };
+    ) => {
 
-  // FIXED CELL UPDATE
-  const onCellValueChanged =
-    (params) => {
-      const updatedRows =
-        rowData.map((row) => {
-          if (
-            row.__rowId ===
-            params.data
-              .__rowId
-          ) {
+      const updatedSheets =
+        sheetsData.map(
+          (
+            sheet
+          ) => {
+
+            if (
+              sheet.name !==
+              activeSheetName
+            ) {
+              return sheet;
+            }
+
             return {
-              ...params.data,
+
+              ...sheet,
+
+              rowData:
+                updatedRows,
+
+              columnDefs:
+                updatedColumns,
             };
           }
+        );
 
-          return row;
-        });
+      setSheetsData(
+        updatedSheets
+      );
+    };
+
+  // =========================
+  // FILE UPLOAD
+  // =========================
+
+  const handleFileUpload =
+    async (
+      event
+    ) => {
+
+      const file =
+        event.target.files[0];
+
+      if (
+        !file
+      ) {
+        return;
+      }
+
+      const workbook =
+        new ExcelJS.Workbook();
+
+      const arrayBuffer =
+        await file.arrayBuffer();
+
+      await workbook.xlsx.load(
+        arrayBuffer
+      );
+
+      await loadWorkbook(
+        workbook
+      );
+    };
+
+  // =========================
+  // GRID ACTIONS
+  // =========================
+
+  const addRow =
+    () => {
+
+      const newRow = {
+
+        __rowId:
+          crypto.randomUUID?.() ||
+          `${Date.now()}`,
+      };
+
+      columnDefs.forEach(
+        (
+          col
+        ) => {
+
+          newRow[
+            col.field
+          ] = "";
+        }
+      );
+
+      const updatedRows = [
+        newRow,
+        ...rowData,
+      ];
 
       setRowData(
         updatedRows
@@ -477,34 +404,439 @@ export default function ExcelUploader() {
       );
     };
 
+  const deleteRows =
+    () => {
+
+      if (
+        !selectedRows.length
+      ) {
+        return;
+      }
+
+      const selectedIds =
+        selectedRows.map(
+          (
+            row
+          ) =>
+            row.__rowId
+        );
+
+      const updatedRows =
+        rowData.filter(
+          (
+            row
+          ) =>
+            !selectedIds.includes(
+              row.__rowId
+            )
+        );
+
+      setSelectedRows(
+        []
+      );
+
+      setRowData(
+        updatedRows
+      );
+
+      updateCurrentSheet(
+        updatedRows,
+        columnDefs
+      );
+    };
+
+  const addColumn =
+    () => {
+
+      setModalType(
+        "add"
+      );
+
+      setModalValue("");
+
+      setModalOpen(
+        true
+      );
+    };
+
+  const deleteColumn =
+    () => {
+
+      setModalType(
+        "delete"
+      );
+
+      setModalValue("");
+
+      setModalOpen(
+        true
+      );
+    };
+
+  const renameColumn =
+    (
+      oldField
+    ) => {
+
+      setPendingColumn(
+        oldField
+      );
+
+      setModalType(
+        "rename"
+      );
+
+      setModalValue(
+        oldField
+      );
+
+      setModalOpen(
+        true
+      );
+    };
+
+  // =========================
+  // MODAL CONFIRM
+  // =========================
+
+  const handleModalConfirm =
+    (
+      value
+    ) => {
+
+      // ADD COLUMN
+
+      if (
+        modalType ===
+        "add"
+      ) {
+
+        const updatedColumns =
+          [
+            ...columnDefs,
+
+            {
+              field:
+                value,
+
+              headerName:
+                value,
+
+              editable:
+                true,
+
+              sortable:
+                true,
+
+              filter:
+                true,
+
+              floatingFilter:
+                true,
+
+              resizable:
+                true,
+            },
+          ];
+
+        const updatedRows =
+          rowData.map(
+            (
+              row
+            ) => ({
+
+              ...row,
+
+              [value]:
+                "",
+            })
+          );
+
+        setColumnDefs(
+          updatedColumns
+        );
+
+        setRowData(
+          updatedRows
+        );
+
+        updateCurrentSheet(
+          updatedRows,
+          updatedColumns
+        );
+      }
+
+      // DELETE COLUMN
+
+      if (
+        modalType ===
+        "delete"
+      ) {
+
+        const updatedColumns =
+          columnDefs.filter(
+            (
+              col
+            ) =>
+              col.field !==
+              value
+          );
+
+        const updatedRows =
+          rowData.map(
+            (
+              row
+            ) => {
+
+              const updated =
+              {
+                ...row,
+              };
+
+              delete updated[
+                value
+              ];
+
+              return updated;
+            }
+          );
+
+        setColumnDefs(
+          updatedColumns
+        );
+
+        setRowData(
+          updatedRows
+        );
+
+        updateCurrentSheet(
+          updatedRows,
+          updatedColumns
+        );
+      }
+
+      // RENAME COLUMN
+
+      if (
+        modalType ===
+        "rename"
+      ) {
+
+        const updatedColumns =
+          columnDefs.map(
+            (
+              col
+            ) => {
+
+              if (
+                col.field ===
+                pendingColumn
+              ) {
+
+                return {
+
+                  ...col,
+
+                  field:
+                    value,
+
+                  headerName:
+                    value,
+                };
+              }
+
+              return col;
+            }
+          );
+
+        const updatedRows =
+          rowData.map(
+            (
+              row
+            ) => {
+
+              const updated =
+              {
+                ...row,
+              };
+
+              updated[
+                value
+              ] =
+                updated[
+                pendingColumn
+                ];
+
+              delete updated[
+                pendingColumn
+              ];
+
+              return updated;
+            }
+          );
+
+        setColumnDefs(
+          updatedColumns
+        );
+
+        setRowData(
+          updatedRows
+        );
+
+        updateCurrentSheet(
+          updatedRows,
+          updatedColumns
+        );
+      }
+
+      setModalOpen(
+        false
+      );
+    };
+
+  // =========================
+  // CELL UPDATE
+  // =========================
+
+  let workbookSaveTimeout =
+    null;
+
+  const debouncedWorkbookSave =
+    (
+      updatedRows,
+      updatedColumns
+    ) => {
+
+      if (
+        !window.electronAPI
+      ) {
+        return;
+      }
+
+      if (
+        !syncFilePath
+      ) {
+        return;
+      }
+
+      clearTimeout(
+        workbookSaveTimeout
+      );
+
+      workbookSaveTimeout =
+        setTimeout(
+          async () => {
+
+            console.log(
+              "Saving workbook..."
+            );
+
+            await window.electronAPI.saveWorkbookSheet(
+              {
+
+                filePath:
+                  syncFilePath,
+
+                sheetName:
+                  activeSheetName,
+
+                rowData:
+                  updatedRows,
+
+                columnDefs:
+                  updatedColumns,
+              }
+            );
+
+          },
+
+          1000
+        );
+    };
+
+  const onCellValueChanged =
+    (
+      params
+    ) => {
+
+      const updatedRows =
+        rowData.map(
+          (
+            row
+          ) => {
+
+            if (
+              row.__rowId ===
+              params.data
+                .__rowId
+            ) {
+
+              return {
+                ...params.data,
+              };
+            }
+
+            return row;
+          }
+        );
+
+      setRowData(
+        updatedRows
+      );
+
+      updateCurrentSheet(
+        updatedRows,
+        columnDefs
+      );
+
+      debouncedWorkbookSave(
+        updatedRows,
+        columnDefs
+      );
+    };
+
+  // =========================
+  // EXPORT
+  // =========================
+
   const exportExcel =
     async () => {
+
       const workbook =
         new ExcelJS.Workbook();
 
       const worksheet =
         workbook.addWorksheet(
           activeSheetName ||
-            "Sheet"
+          "Sheet"
         );
 
       worksheet.columns =
         columnDefs.map(
-          (col) => ({
+          (
+            col
+          ) => ({
+
             header:
               col.field,
 
             key:
               col.field,
 
-            width: 35,
+            width:
+              35,
           })
         );
 
       rowData.forEach(
-        (row) => {
+        (
+          row
+        ) => {
+
           const cleaned =
-            { ...row };
+          {
+            ...row,
+          };
 
           delete cleaned.__rowId;
 
@@ -542,43 +874,92 @@ export default function ExcelUploader() {
       link.click();
     };
 
-  // FIXED FILTERING
+  // =========================
+  // FILTER
+  // =========================
+
   const filteredData =
     useMemo(() => {
-      if (!searchText)
+
+      if (
+        !searchText
+      ) {
         return rowData;
+      }
 
       return rowData.filter(
-        (row) =>
+        (
+          row
+        ) =>
           Object.values(
             row
-          ).some((value) =>
-            String(value)
-              .toLowerCase()
-              .includes(
-                searchText.toLowerCase()
+          ).some(
+            (
+              value
+            ) =>
+              String(
+                value
               )
+                .toLowerCase()
+                .includes(
+                  searchText.toLowerCase()
+                )
           )
       );
+
     }, [
       rowData,
       searchText,
     ]);
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-start flex-wrap gap-6">
+
+    <div className="
+      space-y-8
+    ">
+
+      <div className="
+        flex
+        justify-between
+        items-start
+        flex-wrap
+        gap-6
+      ">
+
         <div>
-          <h1 className="text-5xl font-black">
+
+          <h1 className="
+            text-5xl
+            font-black
+          ">
             Excel Workspace
           </h1>
 
-          <p className="text-slate-400 mt-2 text-lg">
+          <p className="
+            text-slate-400
+            mt-2
+            text-lg
+          ">
             Enterprise sheet operations
           </p>
+
         </div>
 
-        <label className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 transition px-6 py-4 rounded-2xl cursor-pointer font-semibold shadow-2xl">
+        <label className="
+          flex
+          items-center
+          gap-3
+          bg-blue-600
+          hover:bg-blue-700
+          transition
+          px-6
+          py-4
+          rounded-2xl
+          cursor-pointer
+          font-semibold
+          shadow-2xl
+        ">
+
           <Upload size={20} />
 
           Upload Excel
@@ -591,14 +972,26 @@ export default function ExcelUploader() {
             }
             className="hidden"
           />
+
         </label>
+
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="
+        flex
+        flex-wrap
+        gap-3
+      ">
+
         {sheetsData.map(
-          (sheet) => (
+          (
+            sheet
+          ) => (
+
             <button
-              key={sheet.name}
+              key={
+                sheet.name
+              }
               onClick={() =>
                 setActiveSheetName(
                   sheet.name
@@ -610,11 +1003,13 @@ export default function ExcelUploader() {
                 rounded-2xl
                 transition
                 font-medium
-                ${
-                  activeSheetName ===
+
+                ${activeSheetName ===
                   sheet.name
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+
+                  ? "bg-blue-600 text-white"
+
+                  : "bg-slate-800 text-slate-300 hover:bg-slate-700"
                 }
               `}
             >
@@ -622,10 +1017,30 @@ export default function ExcelUploader() {
             </button>
           )
         )}
+
       </div>
 
-      <div className="flex justify-between items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-5 py-4 w-[420px]">
+      <div className="
+        flex
+        justify-between
+        items-center
+        gap-4
+        flex-wrap
+      ">
+
+        <div className="
+          flex
+          items-center
+          gap-3
+          bg-white/5
+          border
+          border-white/10
+          rounded-2xl
+          px-5
+          py-4
+          w-[420px]
+        ">
+
           <Search size={18} />
 
           <input
@@ -639,8 +1054,14 @@ export default function ExcelUploader() {
                 e.target.value
               )
             }
-            className="bg-transparent outline-none text-white w-full"
+            className="
+              bg-transparent
+              outline-none
+              text-white
+              w-full
+            "
           />
+
         </div>
 
         <SheetToolbar
@@ -661,6 +1082,7 @@ export default function ExcelUploader() {
             selectedRows.length
           }
         />
+
       </div>
 
       <SheetGrid
@@ -679,7 +1101,68 @@ export default function ExcelUploader() {
         onCellValueChanged={
           onCellValueChanged
         }
+
+        onRowClicked={(
+          event
+        ) => {
+
+          navigate(
+
+            `/laptops/${encodeURIComponent(
+
+              event.data[
+              "SUDA Asset Tag"
+              ] ||
+
+              event.data[
+              "Asset Tag"
+              ] ||
+
+              event.data[
+              "__rowId"
+              ]
+            )}`,
+
+            {
+              state: {
+
+                laptop:
+                  event.data,
+
+                sheetName:
+                  activeSheetName,
+              },
+            }
+          );
+        }}
       />
+
+      <InputModal
+        open={modalOpen}
+        title={
+          modalType === "rename"
+
+            ? "Rename Column"
+
+            : modalType === "delete"
+
+              ? "Delete Column"
+
+              : "Add Column"
+        }
+        placeholder="Enter value..."
+        defaultValue={
+          modalValue
+        }
+        confirmText="Confirm"
+        onClose={() =>
+          setModalOpen(false)
+        }
+        onConfirm={
+          handleModalConfirm
+        }
+      />
+
     </div>
   );
 }

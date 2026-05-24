@@ -2,6 +2,9 @@ import {
   useMemo,
   useState,
 } from "react";
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import {
   Search,
@@ -28,6 +31,9 @@ export default function Laptops() {
   const {
     laptops,
   } = useApp();
+
+  const navigate =
+    useNavigate();
 
   const [
     selectedLaptop,
@@ -72,7 +78,7 @@ export default function Laptops() {
           return (
             searchMatch &&
             laptop.status ===
-              filter
+            filter
           );
         }
       );
@@ -87,7 +93,7 @@ export default function Laptops() {
     (status) => {
 
       switch (
-        status
+      status
       ) {
 
         case "Assigned":
@@ -108,7 +114,7 @@ export default function Laptops() {
     (status) => {
 
       switch (
-        status
+      status
       ) {
 
         case "Assigned":
@@ -315,7 +321,7 @@ Search candidate, asset, serial...
                   ">
 
                     {laptop.deviceType ===
-                    "MacBook"
+                      "MacBook"
 
                       ? (
                         <Monitor />
@@ -337,11 +343,11 @@ Search candidate, asset, serial...
 
                       {
                         laptop[
-                          "Model Name appears on the box or in the Invoice"
+                        "Model Name appears on the box or in the Invoice"
                         ] ||
 
                         laptop[
-                          "The equipment that the vendor should have."
+                        "The equipment that the vendor should have."
                         ] ||
 
                         "Unknown Device"
@@ -357,7 +363,7 @@ Search candidate, asset, serial...
 
                       {
                         laptop[
-                          "Akraya Asset ID"
+                        "Akraya Asset ID"
                         ]
                       }
 
@@ -377,8 +383,8 @@ Search candidate, asset, serial...
                   text-sm
                   font-semibold
                   ${getStatusColor(
-                    laptop.status
-                  )}
+                  laptop.status
+                )}
                 `}>
 
                   {getStatusIcon(
@@ -421,7 +427,7 @@ Search candidate, asset, serial...
                       laptop.assignedCandidate ||
 
                       laptop[
-                        "The consultant's full legal name (as it will appear in the system)."
+                      "The consultant's full legal name (as it will appear in the system)."
                       ] ||
 
                       "Unassigned"
@@ -448,7 +454,7 @@ Search candidate, asset, serial...
 
                     {
                       laptop[
-                        "Country"
+                      "Country"
                       ]
                     }
 
@@ -473,7 +479,7 @@ Search candidate, asset, serial...
 
                     {
                       laptop[
-                        "RAM of the device"
+                      "RAM of the device"
                       ]
                     }
 
@@ -554,6 +560,51 @@ Search candidate, asset, serial...
               </h2>
 
               <button
+                onClick={() => {
+
+                  navigate(
+
+                    `/laptops/${encodeURIComponent(
+
+                      selectedLaptop[
+                      "Akraya Asset ID"
+                      ] ||
+
+                      selectedLaptop[
+                      "__rowId"
+                      ]
+                    )}`,
+
+                    {
+                      state: {
+
+                        laptop:
+                          selectedLaptop,
+
+                        sheetName:
+                          selectedLaptop
+                            .sourceSheet,
+                      },
+                    }
+                  );
+                }}
+                className="
+    mt-4
+    px-5
+    py-3
+    rounded-2xl
+    bg-blue-600
+    hover:bg-blue-700
+    transition
+    font-semibold
+  "
+              >
+
+                Open Full Record
+
+              </button>
+
+              <button
                 onClick={() =>
                   setSelectedLaptop(
                     null
@@ -585,7 +636,7 @@ Search candidate, asset, serial...
                   selectedLaptop.assignedCandidate ||
 
                   selectedLaptop[
-                    "The consultant's full legal name (as it will appear in the system)."
+                  "The consultant's full legal name (as it will appear in the system)."
                   ]
                 }
               />
@@ -595,7 +646,7 @@ Search candidate, asset, serial...
                 label="Email"
                 value={
                   selectedLaptop[
-                    "Email Address of the candidate"
+                  "Email Address of the candidate"
                   ]
                 }
               />
@@ -605,7 +656,7 @@ Search candidate, asset, serial...
                 label="Asset ID"
                 value={
                   selectedLaptop[
-                    "Akraya Asset ID"
+                  "Akraya Asset ID"
                   ]
                 }
               />
@@ -615,7 +666,7 @@ Search candidate, asset, serial...
                 label="Processor"
                 value={
                   selectedLaptop[
-                    "Processor model of the device"
+                  "Processor model of the device"
                   ]
                 }
               />
@@ -625,7 +676,7 @@ Search candidate, asset, serial...
                 label="RAM"
                 value={
                   selectedLaptop[
-                    "RAM of the device"
+                  "RAM of the device"
                   ]
                 }
               />
@@ -635,7 +686,7 @@ Search candidate, asset, serial...
                 label="Country"
                 value={
                   selectedLaptop[
-                    "Country"
+                  "Country"
                   ]
                 }
               />
@@ -645,7 +696,7 @@ Search candidate, asset, serial...
                 label="Serial Number"
                 value={
                   selectedLaptop[
-                    "manufacturer provided Serial Number for the device (Found on the device, physical sticker and also in the hardware details)"
+                  "manufacturer provided Serial Number for the device (Found on the device, physical sticker and also in the hardware details)"
                   ]
                 }
               />

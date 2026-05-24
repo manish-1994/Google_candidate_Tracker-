@@ -7,6 +7,8 @@ import {
 import MainLayout from "./layouts/MainLayout";
 
 import Dashboard from "./pages/Dashboard";
+import LaptopDetails
+  from "./pages/LaptopDetails";
 import Candidates from "./pages/Candidates";
 import Laptops from "./pages/Laptops";
 import Sheets from "./pages/Sheets";
@@ -28,6 +30,11 @@ export default function App() {
           />
 
           <Route
+            path="/laptops/:assetTag"
+            element={<LaptopDetails />}
+          />
+
+          <Route
             path="/candidates"
             element={<Candidates />}
           />
@@ -35,6 +42,13 @@ export default function App() {
           <Route
             path="/laptops"
             element={<Laptops />}
+          />
+
+          <Route
+            path="/laptops/:assetTag"
+            element={
+              <LaptopDetails />
+            }
           />
 
           <Route

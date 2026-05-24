@@ -1,6 +1,28 @@
+import {
+  useEffect,
+  useState,
+} from "react";
+
 export default function Settings() {
 
-  // RESET SHEETS ONLY
+  const [
+    syncPath,
+    setSyncPath,
+  ] = useState(
+    localStorage.getItem(
+      "syncFilePath"
+    ) || ""
+  );
+
+  const [
+    syncEnabled,
+    setSyncEnabled,
+  ] = useState(false);
+
+  // =========================
+  // RESET SHEETS
+  // =========================
+
   const resetSheetsData =
     () => {
 
@@ -27,7 +49,10 @@ export default function Settings() {
       window.location.reload();
     };
 
-  // RESET CANDIDATES ONLY
+  // =========================
+  // RESET CANDIDATES
+  // =========================
+
   const resetCandidatesData =
     () => {
 
@@ -54,10 +79,87 @@ export default function Settings() {
       window.location.reload();
     };
 
+  // =========================
+  // START WATCHER
+  // =========================
+
+  const startSync =
+    async () => {
+
+      if (
+        !window.electronAPI
+      ) {
+
+        alert(
+          "Electron API unavailable"
+        );
+
+        return;
+      }
+
+      if (!syncPath) {
+
+        alert(
+          "Enter workbook path"
+        );
+
+        return;
+      }
+
+      try {
+
+        await window.electronAPI.startExcelWatch(
+          syncPath
+        );
+
+        localStorage.setItem(
+          "syncFilePath",
+          syncPath
+        );
+
+        setSyncEnabled(
+          true
+        );
+
+        alert(
+          "Workbook sync started"
+        );
+
+      } catch (error) {
+
+        console.error(
+          error
+        );
+
+        alert(
+          "Failed to start sync"
+        );
+      }
+    };
+
+  useEffect(() => {
+
+    const existing =
+      localStorage.getItem(
+        "syncFilePath"
+      );
+
+    if (
+      existing
+    ) {
+
+      setSyncEnabled(
+        true
+      );
+    }
+
+  }, []);
+
   return (
 
     <div className="
       space-y-8
+      pb-10
     ">
 
       {/* HEADER */}
@@ -80,7 +182,118 @@ export default function Settings() {
 
       </div>
 
-      {/* SHEETS RESET */}
+      {/* ONEDRIVE SYNC */}
+
+      <div className="
+        bg-white/5
+        border
+        border-white/10
+        rounded-3xl
+        p-6
+        backdrop-blur-xl
+        space-y-6
+      ">
+
+        <div>
+
+          <h2 className="
+            text-2xl
+            font-bold
+          ">
+            OneDrive Workbook Sync
+          </h2>
+
+          <p className="
+            text-slate-400
+            mt-2
+          ">
+            Automatically sync your local OneDrive Excel workbook with the platform
+          </p>
+
+        </div>
+
+        <div className="
+          space-y-4
+        ">
+
+          <input
+            type="text"
+            value={syncPath}
+            onChange={(e) =>
+              setSyncPath(
+                e.target.value
+              )
+            }
+            placeholder="C:\Users\manish\OneDrive\New Laptop Tracker.xlsx"
+            className="
+              w-full
+              bg-slate-900/70
+              border
+              border-white/10
+              rounded-2xl
+              px-5
+              py-4
+              outline-none
+              text-white
+            "
+          />
+
+          <div className="
+            flex
+            items-center
+            gap-4
+            flex-wrap
+          ">
+
+            <button
+              onClick={
+                startSync
+              }
+              className="
+                bg-blue-600
+                hover:bg-blue-700
+                transition
+                px-5
+                py-3
+                rounded-2xl
+                font-semibold
+              "
+            >
+              Start Sync
+            </button>
+
+            <div className={`
+              px-4
+              py-2
+              rounded-2xl
+              text-sm
+              font-semibold
+              ${
+                syncEnabled
+
+                  ? "bg-green-600"
+
+                  : "bg-slate-700"
+              }
+            `}>
+
+              {
+                syncEnabled
+
+                  ? "Sync Active"
+
+                  : "Sync Disabled"
+              }
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* RESET SHEETS */}
 
       <div className="
         bg-white/5
@@ -139,7 +352,7 @@ export default function Settings() {
 
       </div>
 
-      {/* CANDIDATES RESET */}
+      {/* RESET CANDIDATES */}
 
       <div className="
         bg-white/5
@@ -199,6 +412,5 @@ export default function Settings() {
       </div>
 
     </div>
-
   );
 }

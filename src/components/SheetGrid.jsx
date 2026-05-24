@@ -18,6 +18,7 @@ ModuleRegistry.registerModules([
 ]);
 
 export default function SheetGrid({
+  onRowClicked,
   rowData = [],
   columnDefs = [],
   renameColumn,
@@ -39,10 +40,10 @@ export default function SheetGrid({
           (col) =>
             col &&
             typeof col ===
-              "object" &&
+            "object" &&
             col.field &&
             col.field !==
-              "__rowId"
+            "__rowId"
         )
         .map((col) => ({
           ...col,
@@ -66,7 +67,7 @@ export default function SheetGrid({
             (params) => {
               return (
                 params.data?.[
-                  col.field
+                col.field
                 ] ?? ""
               );
             },
@@ -162,7 +163,9 @@ export default function SheetGrid({
       >
         <AgGridReact
           rowData={rowData}
-
+          onRowClicked={
+            onRowClicked
+          }
           columnDefs={
             safeColumnDefs
           }
