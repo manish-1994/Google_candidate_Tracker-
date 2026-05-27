@@ -63,6 +63,8 @@ export default function Candidates() {
     setSearch,
   ] = useState("");
 
+
+
   const [
     selectedCandidateId,
     setSelectedCandidateId,
@@ -73,6 +75,28 @@ export default function Candidates() {
     setShowSettings,
   ] = useState(false);
 
+  const [
+    showAddFieldModal,
+    setShowAddFieldModal,
+  ] = useState(false);
+
+  const [
+    newFieldName,
+    setNewFieldName,
+  ] = useState("");
+
+
+
+  const [
+    newFieldType,
+    setNewFieldType,
+  ] = useState("text");
+
+
+  const [
+    selectedLaptopSerial,
+    setSelectedLaptopSerial,
+  ] = useState("");
   // FILTERED
 
   const filteredCandidates =
@@ -103,8 +127,9 @@ export default function Candidates() {
   const selectedCandidate =
     candidates.find(
       (c) =>
-        c.id ===
-        selectedCandidateId
+
+        String(c.id) ===
+        String(selectedCandidateId)
     );
 
   // ADD FIELD
@@ -112,25 +137,30 @@ export default function Candidates() {
   const handleAddColumn =
     () => {
 
-      const name =
-        prompt(
-          "Field Name"
+      if (
+        !newFieldName.trim()
+      ) {
+
+        alert(
+          "Field name required"
         );
 
-      if (!name)
         return;
-
-      const type =
-        prompt(
-          "Type: text / checkbox / date / textarea"
-        );
-
-      if (!type)
-        return;
+      }
 
       addCandidateColumn(
-        name,
-        type
+        newFieldName,
+        newFieldType
+      );
+
+      setNewFieldName("");
+
+      setNewFieldType(
+        "text"
+      );
+
+      setShowAddFieldModal(
+        false
       );
     };
 
@@ -147,7 +177,19 @@ export default function Candidates() {
       if (!confirmed)
         return;
 
-      const updated =
+      const field =
+        candidateColumns.find(
+          (col) =>
+            col.id ===
+            columnId
+        );
+
+      if (!field)
+        return;
+
+      // REMOVE COLUMN
+
+      const updatedColumns =
         candidateColumns.filter(
           (col) =>
             col.id !==
@@ -155,8 +197,27 @@ export default function Candidates() {
         );
 
       setCandidateColumns(
-        updated
+        updatedColumns
       );
+
+      // CLEAN CANDIDATES
+
+      const cleanedCandidates =
+        candidates.map(
+          (candidate) => {
+
+            const updated =
+            {
+              ...candidate
+            };
+
+            delete updated[
+              field.name
+            ];
+
+            return updated;
+          }
+        );
     };
 
   // EXPORT
@@ -227,7 +288,7 @@ export default function Candidates() {
 
                 const value =
                   candidate[
-                    col.name
+                  col.name
                   ];
 
                 if (
@@ -247,7 +308,7 @@ export default function Candidates() {
             ),
 
             candidate.assignedLaptopId ||
-              "",
+            "",
 
           ];
 
@@ -300,7 +361,7 @@ export default function Candidates() {
     ) => {
 
       switch (
-        column.type
+      column.type
       ) {
 
         case "checkbox":
@@ -311,7 +372,7 @@ export default function Candidates() {
               type="checkbox"
               checked={
                 candidate[
-                  column.name
+                column.name
                 ] || false
               }
               onChange={(e) =>
@@ -338,7 +399,7 @@ export default function Candidates() {
               type="date"
               value={
                 candidate[
-                  column.name
+                column.name
                 ] || ""
               }
               onChange={(e) =>
@@ -370,7 +431,7 @@ export default function Candidates() {
             <textarea
               value={
                 candidate[
-                  column.name
+                column.name
                 ] || ""
               }
               onChange={(e) =>
@@ -405,7 +466,7 @@ export default function Candidates() {
               type="text"
               value={
                 candidate[
-                  column.name
+                column.name
                 ] || ""
               }
               onChange={(e) =>
@@ -544,8 +605,10 @@ export default function Candidates() {
         ">
 
           <button
-            onClick={
-              handleAddColumn
+            onClick={() =>
+              setShowAddFieldModal(
+                true
+              )
             }
             className="
               bg-purple-600
@@ -749,6 +812,213 @@ export default function Candidates() {
 
         )}
 
+
+        {/* ADD FIELD MODAL */}
+
+        {showAddFieldModal && (
+
+          <div className="
+    fixed
+    inset-0
+    bg-black/70
+    z-50
+    flex
+    items-center
+    justify-center
+  ">
+
+            <div className="
+      w-[500px]
+      bg-slate-900
+      border
+      border-white/10
+      rounded-[32px]
+      p-8
+      space-y-6
+    ">
+
+              <div className="
+        flex
+        justify-between
+        items-center
+      ">
+
+                <h2 className="
+          text-3xl
+          font-black
+        ">
+                  Add Field
+                </h2>
+
+                <button
+                  onClick={() =>
+                    setShowAddFieldModal(
+                      false
+                    )
+                  }
+                  className="
+            bg-red-600
+            hover:bg-red-700
+            transition
+            w-10
+            h-10
+            rounded-xl
+            flex
+            items-center
+            justify-center
+          "
+                >
+
+                  <X size={18} />
+
+                </button>
+
+              </div>
+
+              {/* FIELD NAME */}
+
+              <div>
+
+                <p className="
+          text-sm
+          text-slate-400
+          mb-2
+        ">
+                  Field Name
+                </p>
+
+                <input
+                  type="text"
+                  value={newFieldName}
+                  onChange={(e) =>
+                    setNewFieldName(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Example: Recruiter"
+                  className="
+            w-full
+            bg-slate-800
+            border
+            border-white/10
+            rounded-2xl
+            px-5
+            py-4
+            text-white
+            outline-none
+          "
+                />
+
+              </div>
+
+              {/* FIELD TYPE */}
+
+              <div>
+
+                <p className="
+          text-sm
+          text-slate-400
+          mb-2
+        ">
+                  Field Type
+                </p>
+
+                <select
+                  value={newFieldType}
+                  onChange={(e) =>
+                    setNewFieldType(
+                      e.target.value
+                    )
+                  }
+                  className="
+            w-full
+            bg-slate-800
+            border
+            border-white/10
+            rounded-2xl
+            px-5
+            py-4
+            text-white
+            outline-none
+          "
+                >
+
+                  <option value="text">
+                    Text
+                  </option>
+
+                  <option value="textarea">
+                    Textarea
+                  </option>
+
+                  <option value="checkbox">
+                    Checkbox
+                  </option>
+
+                  <option value="date">
+                    Date
+                  </option>
+
+                </select>
+
+              </div>
+
+              {/* ACTIONS */}
+
+              <div className="
+        flex
+        justify-end
+        gap-4
+      ">
+
+                <button
+                  onClick={() =>
+                    setShowAddFieldModal(
+                      false
+                    )
+                  }
+                  className="
+            bg-slate-700
+            hover:bg-slate-600
+            transition
+            px-5
+            py-3
+            rounded-2xl
+            font-semibold
+          "
+                >
+
+                  Cancel
+
+                </button>
+
+                <button
+                  onClick={
+                    handleAddColumn
+                  }
+                  className="
+            bg-purple-600
+            hover:bg-purple-700
+            transition
+            px-6
+            py-3
+            rounded-2xl
+            font-bold
+          "
+                >
+
+                  Create Field
+
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
         {/* CARDS */}
 
         <div className="
@@ -778,13 +1048,12 @@ export default function Candidates() {
                   p-5
                   cursor-pointer
                   transition
-                  ${
-                    selectedCandidateId ===
+                  ${selectedCandidateId ===
                     candidate.id
 
-                      ? "bg-blue-600/10 border-blue-500"
+                    ? "bg-blue-600/10 border-blue-500"
 
-                      : "bg-white/5 border-white/10"
+                    : "bg-white/5 border-white/10"
                   }
                 `}
               >
@@ -823,7 +1092,7 @@ export default function Candidates() {
 
                         {
                           candidate[
-                            candidateCardSettings.titleField
+                          candidateCardSettings.titleField
                           ] ||
 
                           "Untitled"
@@ -839,7 +1108,7 @@ export default function Candidates() {
 
                         {
                           candidate[
-                            candidateCardSettings.subtitleField
+                          candidateCardSettings.subtitleField
                           ] ||
 
                           "No Value"
@@ -950,7 +1219,7 @@ export default function Candidates() {
 
                 {
                   selectedCandidate[
-                    candidateCardSettings.titleField
+                  candidateCardSettings.titleField
                   ] || "Untitled"
                 }
 
@@ -978,86 +1247,315 @@ export default function Candidates() {
             {/* LAPTOP */}
 
             <div className="
-              bg-slate-900/60
-              border
-              border-white/10
-              rounded-[32px]
-              p-7
-            ">
+  bg-slate-900/60
+  border
+  border-white/10
+  rounded-[32px]
+  p-7
+">
 
               <div className="
-                flex
-                items-center
-                gap-3
-                mb-5
-              ">
+    flex
+    items-center
+    gap-3
+    mb-5
+  ">
 
                 <Laptop />
 
                 <h2 className="
-                  text-3xl
-                  font-black
-                ">
-                  Assigned Laptop
+      text-3xl
+      font-black
+    ">
+                  Laptop Assignment
                 </h2>
 
               </div>
 
-              <select
-                value={
-                  selectedCandidate.assignedLaptopId ||
-                  ""
-                }
-                onChange={(e) =>
-                  assignLaptop(
-                    selectedCandidate.id,
-                    e.target.value
-                  )
-                }
-                className="
-                  bg-slate-800
-                  border
-                  border-white/10
-                  rounded-2xl
-                  px-5
-                  py-5
-                  text-white
-                  w-full
-                  outline-none
-                "
-              >
+              {/* SERIAL HELPER */}
 
-                <option value="">
-                  Select Laptop
-                </option>
+              {(() => {
 
-                {availableLaptops.map(
-                  (
-                    laptop,
-                    index
-                  ) => (
+                const getLaptopSerial =
+                  (laptop) => {
 
-                    <option
-                      key={index}
-                      value={
-                        laptop[
-                          "Akraya Asset ID"
-                        ]
+                    const possibleKeys = [
+
+                      "manufacturer provided Serial Number",
+
+                      "manufacturer provided serial number",
+
+                      "Serial Number",
+
+                      "serial number",
+
+                      "serial",
+
+                      "Serial",
+
+                      "SERIAL NUMBER",
+                    ];
+
+                    for (
+                      const key of possibleKeys
+                    ) {
+
+                      if (
+                        laptop[key]
+                      ) {
+
+                        return String(
+                          laptop[key]
+                        ).trim();
                       }
+                    }
+
+                    const detectedKey =
+                      Object.keys(
+                        laptop
+                      ).find(
+                        (key) =>
+
+                          key
+                            ?.toLowerCase()
+                            .includes(
+                              "serial"
+                            )
+                      );
+
+                    if (
+                      detectedKey
+                    ) {
+
+                      return String(
+                        laptop[
+                        detectedKey
+                        ]
+                      ).trim();
+                    }
+
+                    return "";
+                  };
+
+                return (
+
+                  <>
+
+                    {/* DROPDOWN */}
+
+                    <select
+                      value={
+                        selectedLaptopSerial
+                      }
+                      onChange={(e) => {
+
+                        setSelectedLaptopSerial(
+                          e.target.value
+                        );
+                      }}
+                      className="
+            bg-slate-800
+            border
+            border-white/10
+            rounded-2xl
+            px-5
+            py-5
+            text-white
+            w-full
+            outline-none
+            mb-4
+          "
                     >
 
-                      {
-                        laptop[
-                          "Akraya Asset ID"
-                        ]
-                      }
+                      <option value="">
+                        Select Serial Number
+                      </option>
 
-                    </option>
+                      {availableLaptops.map(
+                        (
+                          laptop,
+                          index
+                        ) => {
 
-                  )
-                )}
+                          const serial =
+                            getLaptopSerial(
+                              laptop
+                            );
 
-              </select>
+                          if (!serial)
+                            return null;
+
+                          return (
+
+                            <option
+                              key={index}
+                              value={serial}
+                            >
+
+                              {serial}
+
+                            </option>
+                          );
+                        }
+                      )}
+
+                    </select>
+
+                    {/* PREVIEW */}
+
+                    <div className="
+          bg-slate-800
+          border
+          border-blue-500/20
+          rounded-2xl
+          p-5
+          mb-4
+        ">
+
+                      <p className="
+            text-sm
+            text-slate-400
+            mb-2
+          ">
+                        Selected Serial Number
+                      </p>
+
+                      <input
+                        type="text"
+                        value={
+                          selectedLaptopSerial
+                        }
+                        onChange={(e) =>
+                          setSelectedLaptopSerial(
+                            e.target.value
+                          )
+                        }
+                        placeholder="Paste serial number manually..."
+                        className="
+              w-full
+              bg-slate-900
+              border
+              border-white/10
+              rounded-2xl
+              px-5
+              py-4
+              text-white
+              outline-none
+            "
+                      />
+
+                    </div>
+
+                    {/* ACTIONS */}
+
+                    <div className="
+          flex
+          gap-4
+        ">
+
+                      <button
+                        onClick={() => {
+
+                          navigator.clipboard.writeText(
+                            selectedLaptopSerial
+                          );
+
+                          alert(
+                            "Serial copied."
+                          );
+                        }}
+                        className="
+              flex-1
+              bg-slate-700
+              hover:bg-slate-600
+              transition
+              py-4
+              rounded-2xl
+              font-bold
+            "
+                      >
+
+                        Copy Serial
+
+                      </button>
+
+                      <button
+                        onClick={() => {
+
+                          if (
+                            !selectedLaptopSerial
+                          ) {
+
+                            alert(
+                              "Select serial number first."
+                            );
+
+                            return;
+                          }
+
+                          assignLaptop(
+                            selectedCandidate.id,
+                            selectedLaptopSerial
+                          );
+
+                          alert(
+                            "Laptop assigned successfully."
+                          );
+                        }}
+                        className="
+              flex-1
+              bg-blue-600
+              hover:bg-blue-700
+              transition
+              py-4
+              rounded-2xl
+              font-bold
+            "
+                      >
+
+                        Assign Laptop
+
+                      </button>
+
+                    </div>
+
+                    {/* CURRENT */}
+
+                    {selectedCandidate.assignedLaptopId && (
+
+                      <div className="
+            mt-5
+            bg-green-600/20
+            border
+            border-green-500/20
+            rounded-2xl
+            p-4
+          ">
+
+                        <p className="
+              text-sm
+              text-green-300
+            ">
+                          Currently Assigned:
+                        </p>
+
+                        <p className="
+              font-bold
+              mt-1
+            ">
+                          {
+                            selectedCandidate.assignedLaptopId
+                          }
+                        </p>
+
+                      </div>
+
+                    )}
+
+                  </>
+
+                );
+              })()}
 
             </div>
 

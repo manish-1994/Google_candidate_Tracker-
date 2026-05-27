@@ -155,80 +155,80 @@ export function AppProvider({
   // CARD SETTINGS
   // =========================
 
-  
 
-const getValidField = (
-  savedField,
-  fallbackField,
-  columns
-) => {
-  const exists =
-    columns.find(
-      (col) =>
-        col.name ===
-        savedField
+
+  const getValidField = (
+    savedField,
+    fallbackField,
+    columns
+  ) => {
+    const exists =
+      columns.find(
+        (col) =>
+          col.name ===
+          savedField
+      );
+
+    if (exists) {
+      return savedField;
+    }
+
+    return (
+      columns[0]?.name ||
+      fallbackField
     );
-
-  if (exists) {
-    return savedField;
-  }
-
-  return (
-    columns[0]?.name ||
-    fallbackField
-  );
-};
-
-const [
-  candidateCardSettings,
-  setCandidateCardSettings,
-] = useState(() => {
-  const saved =
-    localStorage.getItem(
-      "candidateCardSettings"
-    );
-
-  const parsed = saved
-    ? JSON.parse(saved)
-    : defaultCardSettings;
-
-  return {
-    titleField:
-      parsed.titleField,
-
-    subtitleField:
-      parsed.subtitleField,
-
-    badgeField:
-      parsed.badgeField,
-
-    laptopField:
-      parsed.laptopField,
   };
-});
 
-// AUTO HEAL SETTINGS
-useEffect(() => {
-  setCandidateCardSettings(
-    (prev) => ({
-      ...prev,
+  const [
+    candidateCardSettings,
+    setCandidateCardSettings,
+  ] = useState(() => {
+    const saved =
+      localStorage.getItem(
+        "candidateCardSettings"
+      );
 
+    const parsed = saved
+      ? JSON.parse(saved)
+      : defaultCardSettings;
+
+    return {
       titleField:
-        getValidField(
-          prev.titleField,
-          "Candidate Name",
-          candidateColumns
-        ),
+        parsed.titleField,
 
       subtitleField:
-        getValidField(
-          prev.subtitleField,
-          "Email",
-          candidateColumns
-        ),
-    })
-  );
-}, [candidateColumns]);
+        parsed.subtitleField,
+
+      badgeField:
+        parsed.badgeField,
+
+      laptopField:
+        parsed.laptopField,
+    };
+  });
+
+  // AUTO HEAL SETTINGS
+  useEffect(() => {
+    setCandidateCardSettings(
+      (prev) => ({
+        ...prev,
+
+        titleField:
+          getValidField(
+            prev.titleField,
+            "Candidate Name",
+            candidateColumns
+          ),
+
+        subtitleField:
+          getValidField(
+            prev.subtitleField,
+            "Email",
+            candidateColumns
+          ),
+      })
+    );
+  }, [candidateColumns]);
 
   // =========================
   // SAVE SYSTEM
@@ -411,13 +411,13 @@ useEffect(() => {
   const addCandidate =
     () => {
       const newCandidate =
-        {
-          id:
-            Date.now(),
+      {
+        id:
+          Date.now(),
 
-          assignedLaptopId:
-            "",
-        };
+        assignedLaptopId:
+          "",
+      };
 
       candidateColumns.forEach(
         (column) => {
@@ -425,7 +425,7 @@ useEffect(() => {
             column.name
           ] =
             column.type ===
-            "checkbox"
+              "checkbox"
               ? false
               : "";
         }
@@ -489,37 +489,90 @@ useEffect(() => {
       name,
       type
     ) => {
+
+      // PREVENT EMPTY
+
+      if (
+        !name?.trim()
+      ) {
+
+        return;
+      }
+
+      // PREVENT DUPLICATES
+
+      const exists =
+        candidateColumns.find(
+          (column) =>
+
+            column.name
+              .toLowerCase()
+              .trim() ===
+
+            name
+              .toLowerCase()
+              .trim()
+        );
+
+      if (exists) {
+
+        alert(
+          "Field already exists."
+        );
+
+        return;
+      }
+
+      const cleanName =
+        name.trim();
+
       const newColumn =
-        {
-          id:
-            Date.now(),
+      {
+        id:
+          Date.now(),
 
-          name,
-          type,
-        };
+        name:
+          cleanName,
 
-      setCandidateColumns([
+        type,
+      };
+
+      // UPDATE COLUMNS
+
+      const updatedColumns = [
+
         ...candidateColumns,
-        newColumn,
-      ]);
 
-      const updated =
+        newColumn,
+      ];
+
+      setCandidateColumns(
+        updatedColumns
+      );
+
+      // UPDATE CANDIDATES
+
+      const updatedCandidates =
         candidates.map(
           (
             candidate
           ) => ({
+
             ...candidate,
 
-            [name]:
+            [cleanName]:
+
               type ===
-              "checkbox"
+                "checkbox"
+
                 ? false
+
                 : "",
           })
         );
 
       setCandidates(
-        updated
+        updatedCandidates
       );
     };
 
@@ -541,14 +594,15 @@ useEffect(() => {
         updated[index - 1],
         updated[index],
       ] = [
-        updated[index],
-        updated[index - 1],
-      ];
+          updated[index],
+          updated[index - 1],
+        ];
 
       setCandidateColumns(
         updated
       );
     };
+
 
   const moveFieldDown =
     (id) => {
@@ -561,7 +615,7 @@ useEffect(() => {
       if (
         index ===
         candidateColumns.length -
-          1
+        1
       )
         return;
 
@@ -572,9 +626,9 @@ useEffect(() => {
         updated[index + 1],
         updated[index],
       ] = [
-        updated[index],
-        updated[index + 1],
-      ];
+          updated[index],
+          updated[index + 1],
+        ];
 
       setCandidateColumns(
         updated
@@ -605,20 +659,28 @@ useEffect(() => {
   const assignLaptop =
     (
       candidateId,
-      assetId
+      laptopValue
     ) => {
+
+      // =====================
+      // UPDATE CANDIDATE
+      // =====================
+
       const updatedCandidates =
         candidates.map(
           (candidate) => {
+
             if (
-              candidate.id ===
-              candidateId
+              String(candidate.id) ===
+              String(candidateId)
             ) {
+
               return {
+
                 ...candidate,
 
                 assignedLaptopId:
-                  assetId,
+                  laptopValue,
               };
             }
 
@@ -630,16 +692,79 @@ useEffect(() => {
         updatedCandidates
       );
 
+      // =====================
+      // UPDATE LAPTOP STATUS
+      // =====================
+
       const updatedLaptops =
         laptops.map(
           (laptop) => {
-            if (
+
+            // FIND SERIAL COLUMN
+
+            const serialKey =
+              Object.keys(
+                laptop
+              ).find(
+                (key) =>
+
+                  key
+                    ?.toLowerCase()
+                    .includes(
+                      "serial"
+                    )
+              );
+
+            // SERIAL VALUE
+
+            const serialValue =
+              serialKey
+
+                ? laptop[
+                serialKey
+                ]
+
+                : null;
+
+            // ASSET ID
+
+            const assetId =
               laptop[
-                "Akraya Asset ID"
-              ] ===
-              assetId
-            ) {
+              "Akraya Asset ID"
+              ];
+
+            // MATCH CHECK
+
+            const matches =
+
+              String(assetId || "")
+                .trim()
+                .toLowerCase()
+
+              ===
+
+              String(laptopValue || "")
+                .trim()
+                .toLowerCase()
+
+              ||
+
+              String(serialValue || "")
+                .trim()
+                .toLowerCase()
+
+              ===
+
+              String(laptopValue || "")
+                .trim()
+                .toLowerCase();
+
+            // UPDATE STATUS
+
+            if (matches) {
+
               return {
+
                 ...laptop,
 
                 status:
@@ -655,19 +780,221 @@ useEffect(() => {
         updatedLaptops
       );
     };
-
   // =========================
   // AVAILABLE LAPTOPS
   // =========================
 
   const availableLaptops =
     useMemo(() => {
+
       return laptops.filter(
-        (laptop) =>
-          laptop.status !==
-          "Assigned"
+        (laptop) => {
+
+          const status =
+            String(
+              laptop.status || ""
+            )
+              .toLowerCase()
+              .trim();
+
+          // ONLY BLOCK DAMAGED
+
+          return (
+            status !==
+            "damaged"
+          );
+        }
       );
+
     }, [laptops]);
+
+  // =========================
+  // ALERT SETTINGS
+  // =========================
+
+  const [
+    alertSettings,
+    setAlertSettings,
+  ] = useState(() => {
+
+    const saved =
+      localStorage.getItem(
+        "alertSettings"
+      );
+
+    return saved
+      ? JSON.parse(saved)
+      : {
+
+        desktopNotifications:
+          true,
+
+        pendingOnboarding:
+          true,
+
+        noLaptopAssigned:
+          true,
+
+        usThreshold:
+          20,
+
+        indiaThreshold:
+          5,
+
+        workbookReminderHours:
+          1,
+
+        damagedInventoryAlerts:
+          true,
+      };
+  });
+
+  // =========================
+  // WORKBOOK TIMESTAMP
+  // =========================
+
+  const [
+    workbookLastUpdated,
+    setWorkbookLastUpdated,
+  ] = useState(() => {
+
+    const saved =
+      localStorage.getItem(
+        "workbookLastUpdated"
+      );
+
+    return saved
+      ? Number(saved)
+      : Date.now();
+  });
+
+  // =========================
+  // SAVE ALERT SETTINGS
+  // =========================
+
+  useEffect(() => {
+
+    localStorage.setItem(
+      "alertSettings",
+      JSON.stringify(
+        alertSettings
+      )
+    );
+
+  }, [alertSettings]);
+
+  useEffect(() => {
+
+    localStorage.setItem(
+      "workbookLastUpdated",
+      workbookLastUpdated
+    );
+
+  }, [
+    workbookLastUpdated,
+  ]);
+
+  // =========================
+  // GENERATED ALERTS
+  // =========================
+
+  const generatedAlerts =
+    useMemo(() => {
+
+      const alerts = [];
+
+      // =====================
+      // US INVENTORY
+      // =====================
+
+      const usAvailable =
+        availableLaptops.filter(
+          (laptop) =>
+
+            (
+              laptop.Country ||
+              ""
+            )
+              .toLowerCase()
+              .includes("usa")
+        ).length;
+
+      if (
+        usAvailable <
+        alertSettings.usThreshold
+      ) {
+
+        alerts.push({
+
+          type:
+            "inventory",
+
+          level:
+            usAvailable < 10
+
+              ? "critical"
+
+              : "warning",
+
+          title:
+            "US Chromebook Inventory Low",
+
+          description:
+            `Only ${usAvailable} US Chromebooks available.`,
+        });
+      }
+
+      // =====================
+      // INDIA INVENTORY
+      // =====================
+
+      const indiaAvailable =
+        availableLaptops.filter(
+          (laptop) =>
+
+            (
+              laptop.Country ||
+              ""
+            )
+              .toLowerCase()
+              .includes(
+                "india"
+              )
+        ).length;
+
+      if (
+        indiaAvailable <
+        alertSettings.indiaThreshold
+      ) {
+
+        alerts.push({
+
+          type:
+            "inventory",
+
+          level:
+            indiaAvailable < 2
+
+              ? "critical"
+
+              : "warning",
+
+          title:
+            "India Chromebook Inventory Low",
+
+          description:
+            `Only ${indiaAvailable} India Chromebooks available.`,
+        });
+      }
+
+      return alerts;
+
+    }, [
+
+      availableLaptops,
+
+      alertSettings,
+    ]);
 
   return (
     <AppContext.Provider
@@ -716,6 +1043,13 @@ useEffect(() => {
 
         // LAPTOPS
         assignLaptop,
+        generatedAlerts,
+
+        alertSettings,
+        setAlertSettings,
+
+        workbookLastUpdated,
+        setWorkbookLastUpdated,
       }}
     >
       {children}

@@ -2,6 +2,11 @@ const {
   app,
   BrowserWindow,
   ipcMain,
+  dialog,
+  Notification,
+  Tray,
+  Menu,
+  nativeImage,
 } = require("electron");
 
 const path =
@@ -13,40 +18,34 @@ const fs =
 const chokidar =
   require("chokidar");
 
-const ExcelJS =
-  require("exceljs");
-
 let mainWindow;
+let tray;
+let watcher;
 
-const isDev =
-  !app.isPackaged;
+let workbookPath =
+  null;
 
-// =========================
-// LOOP PROTECTION
-// =========================
-
-let isInternalWorkbookUpdate =
-  false;
-
-// =========================
-// WINDOW
-// =========================
+// ========================
+// CREATE WINDOW
+// ========================
 
 function createWindow() {
 
   mainWindow =
     new BrowserWindow({
 
-      width: 1800,
+      width: 1700,
 
-      height: 1100,
+      height: 950,
 
       minWidth: 1400,
 
-      minHeight: 900,
+      minHeight: 800,
 
       backgroundColor:
         "#020617",
+
+      show: false,
 
       autoHideMenuBar:
         true,
@@ -54,7 +53,7 @@ function createWindow() {
       webPreferences: {
 
         preload:
-          path.resolve(
+          path.join(
             __dirname,
             "preload.cjs"
           ),
@@ -64,188 +63,180 @@ function createWindow() {
 
         nodeIntegration:
           false,
-
-        sandbox:
-          false,
       },
     });
 
-  if (isDev) {
+  // ======================
+  // LOAD APP
+  // ======================
 
-    mainWindow.loadURL(
-      "http://localhost:5173"
-    );
+  mainWindow.loadURL(
+    "http://localhost:5173"
 
-    mainWindow.webContents.openDevTools({
-      mode: "detach",
-    });
+  );
+  mainWindow.webContents.openDevTools();
+  // ======================
+  // SHOW WHEN READY
+  // ======================
 
-  } else {
-
-    mainWindow.loadFile(
-      path.join(
-        __dirname,
-        "../dist/index.html"
-      )
-    );
-  }
-
-  mainWindow.on(
-    "closed",
+  mainWindow.once(
+    "ready-to-show",
     () => {
 
-      mainWindow =
-        null;
+      mainWindow.show();
+
+    }
+  );
+
+  // ======================
+  // MINIMIZE TO TRAY
+  // ======================
+
+  mainWindow.on(
+    "close",
+    (event) => {
+
+      if (
+        !app.isQuiting
+      ) {
+
+        event.preventDefault();
+
+        mainWindow.hide();
+
+        showDesktopNotification(
+          "Google Tracker",
+          "Application minimized to tray."
+        );
+      }
     }
   );
 }
+
+// ========================
+// TRAY
+// ========================
+
+function createTray() {
+
+  const iconPath =
+    path.join(
+      __dirname,
+      "icon.png"
+    );
+
+  const icon =
+    nativeImage.createFromPath(
+      iconPath
+    );
+
+  tray = new Tray(icon);
+
+  const contextMenu =
+    Menu.buildFromTemplate([
+
+      {
+
+        label:
+          "Open Google Tracker",
+
+        click: () => {
+
+          mainWindow.show();
+        },
+      },
+
+      {
+
+        label:
+          "Quit",
+
+        click: () => {
+
+          app.isQuiting =
+            true;
+
+          app.quit();
+        },
+      },
+
+    ]);
+
+  tray.setToolTip(
+    "Google Tracker"
+  );
+
+  tray.setContextMenu(
+    contextMenu
+  );
+
+  tray.on(
+    "double-click",
+    () => {
+
+      mainWindow.show();
+
+    }
+  );
+}
+
+// ========================
+// NOTIFICATIONS
+// ========================
+
+function showDesktopNotification(
+  title,
+  body
+) {
+
+  if (
+    Notification.isSupported()
+  ) {
+
+    new Notification({
+
+      title,
+      body,
+
+      silent: false,
+
+    }).show();
+  }
+}
+
+// ========================
+// APP READY
+// ========================
 
 app.whenReady().then(
   () => {
 
     createWindow();
 
-    app.on(
-      "activate",
-      () => {
+    createTray();
 
-        if (
-          BrowserWindow.getAllWindows()
-            .length === 0
-        ) {
+    // ====================
+    // STARTUP NOTIFICATION
+    // ====================
 
-          createWindow();
-        }
-      }
-    );
-  }
-);
+    setTimeout(() => {
 
-app.on(
-  "window-all-closed",
-  () => {
-
-    if (
-      process.platform !==
-      "darwin"
-    ) {
-
-      app.quit();
-    }
-  }
-);
-
-// =========================
-// WATCH EXCEL FILE
-// =========================
-
-let watcher = null;
-
-ipcMain.handle(
-  "start-excel-watch",
-
-  async (
-    event,
-    filePath
-  ) => {
-
-    if (
-      watcher
-    ) {
-
-      watcher.close();
-    }
-
-    watcher =
-      chokidar.watch(
-        filePath,
-        {
-          ignoreInitial:
-            true,
-        }
+      showDesktopNotification(
+        "Google Tracker",
+        "Operations platform started successfully."
       );
 
-    let syncTimeout = null;
+    }, 3000);
 
-    watcher.on(
-      "change",
-
-      () => {
-
-        // IGNORE SELF WRITES
-
-        if (
-          isInternalWorkbookUpdate
-        ) {
-
-          console.log(
-            "Ignoring internal workbook update"
-          );
-
-          return;
-        }
-
-        console.log(
-          "Workbook changed"
-        );
-
-        clearTimeout(
-          syncTimeout
-        );
-
-        syncTimeout =
-          setTimeout(
-            () => {
-
-              if (
-                mainWindow
-              ) {
-
-                mainWindow.webContents.send(
-                  "excel-file-updated",
-                  filePath
-                );
-              }
-
-            },
-
-            1200
-          );
-      }
-    );
-
-    return true;
   }
 );
 
-// =========================
-// READ EXCEL FILE
-// =========================
+// ========================
+// IPC NOTIFICATIONS
+// ========================
 
 ipcMain.handle(
-  "read-excel-file",
-
-  async (
-    event,
-    filePath
-  ) => {
-
-    const buffer =
-      fs.readFileSync(
-        filePath
-      );
-
-    return buffer;
-  }
-);
-
-// =========================
-// SAVE WORKBOOK SHEET
-// =========================
-
-ipcMain.handle(
-  "save-workbook-sheet",
-
+  "show-notification",
   async (
     event,
     payload
@@ -253,136 +244,280 @@ ipcMain.handle(
 
     try {
 
-      const {
-
-        filePath,
-        sheetName,
-        rowData,
-        columnDefs,
-
-      } = payload;
-
-      if (
-        !filePath
-      ) {
-
-        return {
-          success: false,
-        };
-      }
-
-      isInternalWorkbookUpdate =
-        true;
-
-      const workbook =
-        new ExcelJS.Workbook();
-
-      await workbook.xlsx.readFile(
-        filePath
+      showDesktopNotification(
+        payload.title,
+        payload.body
       );
 
-      let worksheet =
-        workbook.getWorksheet(
-          sheetName
+      return true;
+
+    } catch (
+    error
+    ) {
+
+      console.error(
+        error
+      );
+
+      return false;
+    }
+  }
+);
+ipcMain.handle(
+  "read-excel-file",
+  async (
+    event,
+    filePath
+  ) => {
+
+    try {
+
+      const buffer =
+        fs.readFileSync(
+          filePath
         );
 
-      // CREATE IF MISSING
+      return {
+
+        success: true,
+
+        data:
+          buffer,
+      };
+
+    } catch (
+      error
+    ) {
+
+      console.error(
+        error
+      );
+
+      return {
+
+        success: false,
+
+        error:
+          error.message,
+      };
+    }
+  }
+);
+// ========================
+// WORKBOOK WATCHER
+// ========================
+
+ipcMain.handle(
+  "start-excel-watch",
+  async (
+    event,
+    filePath
+  ) => {
+
+    try {
+
+      workbookPath =
+        filePath;
 
       if (
-        !worksheet
+        watcher
       ) {
 
-        worksheet =
-          workbook.addWorksheet(
-            sheetName
-          );
+        watcher.close();
       }
 
-      // =========================
-      // CLEAR EXISTING
-      // =========================
+      watcher =
+        chokidar.watch(
+          filePath,
+          {
 
-      worksheet.spliceRows(
-        1,
-        worksheet.rowCount
-      );
+            ignoreInitial:
+              true,
 
-      // =========================
-      // STABLE COLUMN ORDER
-      // =========================
-
-      const headers =
-        columnDefs.map(
-          (
-            col
-          ) =>
-            col.field
+            persistent:
+              true,
+          }
         );
 
-      // HEADER ROW
-
-      worksheet.addRow(
-        headers
-      );
-
-      // DATA ROWS
-
-      rowData.forEach(
-        (
-          row
-        ) => {
-
-          const values =
-            headers.map(
-              (
-                header
-              ) =>
-                row[
-                  header
-                ] ?? ""
-            );
-
-          worksheet.addRow(
-            values
-          );
-        }
-      );
-
-      await workbook.xlsx.writeFile(
-        filePath
-      );
-
-      console.log(
-        "Workbook saved"
-      );
-
-      setTimeout(
+      watcher.on(
+        "change",
         () => {
 
-          isInternalWorkbookUpdate =
-            false;
-        },
+          if (
+            mainWindow
+          ) {
 
-        2500
+            mainWindow.webContents.send(
+              "workbook-updated"
+            );
+          }
+
+          showDesktopNotification(
+            "Workbook Updated",
+            "Excel workbook changes detected."
+          );
+        }
       );
 
       return {
         success: true,
       };
 
-    } catch (error) {
+    } catch (
+    error
+    ) {
 
       console.error(
-        "Workbook save failed",
         error
       );
 
-      isInternalWorkbookUpdate =
-        false;
-
       return {
+
         success: false,
+
+        error:
+          error.message,
       };
     }
+  }
+);
+
+// ========================
+// SAVE WORKBOOK
+// ========================
+
+ipcMain.handle(
+  "save-workbook",
+  async (
+    event,
+    {
+      path: filePath,
+      buffer,
+    }
+  ) => {
+
+    try {
+
+      fs.writeFileSync(
+        filePath,
+        Buffer.from(
+          buffer
+        )
+      );
+
+      showDesktopNotification(
+        "Workbook Saved",
+        "Workbook changes saved successfully."
+      );
+
+      return {
+        success: true,
+      };
+
+    } catch (
+    error
+    ) {
+
+      console.error(
+        error
+      );
+
+      return {
+
+        success: false,
+
+        error:
+          error.message,
+      };
+    }
+  }
+);
+
+// ========================
+// OPEN FILE DIALOG
+// ========================
+
+ipcMain.handle(
+  "select-workbook",
+
+  async () => {
+
+    const result =
+      await dialog.showOpenDialog({
+
+        properties: [
+          "openFile"
+        ],
+
+        filters: [
+
+          {
+            name:
+              "Excel Files",
+
+            extensions: [
+              "xlsx",
+              "xls"
+            ],
+          },
+        ],
+      });
+
+    if (
+      result.canceled
+    ) {
+
+      return null;
+    }
+
+    return result.filePaths[0];
+  }
+);
+
+// ========================
+// WINDOW HANDLING
+// ========================
+
+app.on(
+  "activate",
+  () => {
+
+    if (
+      BrowserWindow.getAllWindows()
+        .length === 0
+    ) {
+
+      createWindow();
+
+    } else {
+
+      mainWindow.show();
+    }
+  }
+);
+
+// ========================
+// PREVENT QUIT
+// ========================
+
+app.on(
+  "before-quit",
+  () => {
+
+    app.isQuiting =
+      true;
+  }
+);
+
+// ========================
+// KEEP RUNNING
+// ========================
+
+app.on(
+  "window-all-closed",
+  () => {
+
+    // DO NOTHING
+    // KEEP APP IN BACKGROUND
   }
 );

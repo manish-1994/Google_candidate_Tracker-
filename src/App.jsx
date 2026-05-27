@@ -4,15 +4,32 @@ import {
   Route,
 } from "react-router-dom";
 
-import MainLayout from "./layouts/MainLayout";
+import MainLayout
+  from "./layouts/MainLayout";
 
-import Dashboard from "./pages/Dashboard";
+import Dashboard
+  from "./pages/Dashboard";
+
+import Candidates
+  from "./pages/Candidates";
+
+import Laptops
+  from "./pages/Laptops";
+
 import LaptopDetails
   from "./pages/LaptopDetails";
-import Candidates from "./pages/Candidates";
-import Laptops from "./pages/Laptops";
-import Sheets from "./pages/Sheets";
-import Settings from "./pages/Settings";
+
+import Sheets
+  from "./pages/Sheets";
+
+import Settings
+  from "./pages/Settings";
+
+import WorkbookViewer
+  from "./pages/WorkbookViewer";
+
+import Alerts
+  from "./pages/Alerts";
 
 export default function App() {
 
@@ -24,24 +41,31 @@ export default function App() {
 
         <Routes>
 
-          <Route
-            path="/"
-            element={<Dashboard />}
-          />
+          {/* DASHBOARD */}
 
           <Route
-            path="/laptops/:assetTag"
-            element={<LaptopDetails />}
+            path="/"
+            element={
+              <Dashboard />
+            }
           />
+
+          {/* CANDIDATES */}
 
           <Route
             path="/candidates"
-            element={<Candidates />}
+            element={
+              <Candidates />
+            }
           />
+
+          {/* LAPTOPS */}
 
           <Route
             path="/laptops"
-            element={<Laptops />}
+            element={
+              <Laptops />
+            }
           />
 
           <Route
@@ -51,14 +75,40 @@ export default function App() {
             }
           />
 
+          {/* SHEETS */}
+
           <Route
             path="/sheets"
-            element={<Sheets />}
+            element={
+              <Sheets />
+            }
           />
+
+          {/* ALERTS */}
+
+          <Route
+            path="/alerts"
+            element={
+              <Alerts />
+            }
+          />
+
+          {/* WORKBOOK */}
+
+          <Route
+            path="/workbook"
+            element={
+              <WorkbookViewer />
+            }
+          />
+
+          {/* SETTINGS */}
 
           <Route
             path="/settings"
-            element={<Settings />}
+            element={
+              <Settings />
+            }
           />
 
         </Routes>

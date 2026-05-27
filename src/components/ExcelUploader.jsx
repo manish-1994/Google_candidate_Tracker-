@@ -2,6 +2,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from "react";
 
 import ExcelJS from "exceljs";
@@ -187,13 +188,28 @@ export default function ExcelUploader() {
         const workbook =
           new ExcelJS.Workbook();
 
-        const buffer =
+        const response =
           await window.electronAPI.readExcelFile(
             filePath
           );
 
+        if (
+          !response?.success
+        ) {
+
+          throw new Error(
+            response?.error ||
+            "Failed to read workbook"
+          );
+        }
+
+        const uint8Array =
+          new Uint8Array(
+            response.data
+          );
+
         await workbook.xlsx.load(
-          buffer
+          uint8Array
         );
 
         await loadWorkbook(
@@ -698,8 +714,8 @@ export default function ExcelUploader() {
   // CELL UPDATE
   // =========================
 
-  let workbookSaveTimeout =
-    null;
+  const workbookSaveTimeout =
+    useRef(null);
 
   const debouncedWorkbookSave =
     (
@@ -720,10 +736,10 @@ export default function ExcelUploader() {
       }
 
       clearTimeout(
-        workbookSaveTimeout
+        workbookSaveTimeout.current
       );
 
-      workbookSaveTimeout =
+      workbookSaveTimeout.current =
         setTimeout(
           async () => {
 
@@ -731,7 +747,7 @@ export default function ExcelUploader() {
               "Saving workbook..."
             );
 
-            await window.electronAPI.saveWorkbookSheet(
+            await window.electronAPI.saveWorkbook(
               {
 
                 filePath:

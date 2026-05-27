@@ -5,13 +5,13 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "electron-dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron-build": "vite build && electron-builder"
-  },
+  "dev": "vite",
+  "electron": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+  "build": "vite build",
+  "desktop-build": "vite build && electron-builder",
+  "preview": "vite preview",
+  "lint": "eslint ."
+},
   "build": {
     "appId": "com.googletracker.operations",
     "productName": "Google Tracker Operations",

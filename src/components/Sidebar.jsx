@@ -4,39 +4,124 @@ import {
   Laptop,
   FileSpreadsheet,
   Settings,
+  AlertTriangle,
 } from "lucide-react";
 
-import { Link } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+} from "react-router-dom";
 
-const menu = [
-  {
-    name: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/",
-  },
-  {
-    name: "Candidates",
-    icon: Users,
-    path: "/candidates",
-  },
-  {
-    name: "Laptop Tracker",
-    icon: Laptop,
-    path: "/laptops",
-  },
-  {
-    name: "Sheets",
-    icon: FileSpreadsheet,
-    path: "/sheets",
-  },
-  {
-    name: "Settings",
-    icon: Settings,
-    path: "/settings",
-  },
-];
+import {
+  useApp,
+} from "../context/AppContext";
 
 export default function Sidebar() {
+
+  const location =
+    useLocation();
+
+  const context =
+    useApp() || {};
+
+  const alerts =
+    Array.isArray(
+      context.generatedAlerts
+    )
+
+      ? context.generatedAlerts
+
+      : [];
+
+  const criticalCount =
+    alerts.filter(
+      (alert) =>
+        alert?.level ===
+        "critical"
+    ).length;
+
+  const warningCount =
+    alerts.filter(
+      (alert) =>
+        alert?.level ===
+        "warning"
+    ).length;
+
+  const totalAlerts =
+    alerts.length;
+
+  const menu = [
+
+    {
+      name:
+        "Dashboard",
+
+      icon:
+        LayoutDashboard,
+
+      path:
+        "/",
+    },
+
+    {
+      name:
+        "Candidates",
+
+      icon:
+        Users,
+
+      path:
+        "/candidates",
+    },
+
+    {
+      name:
+        "Laptop Tracker",
+
+      icon:
+        Laptop,
+
+      path:
+        "/laptops",
+    },
+
+    {
+      name:
+        "Sheets",
+
+      icon:
+        FileSpreadsheet,
+
+      path:
+        "/sheets",
+    },
+
+    {
+      name:
+        "Alerts",
+
+      icon:
+        AlertTriangle,
+
+      path:
+        "/alerts",
+
+      badge:
+        totalAlerts,
+    },
+
+    {
+      name:
+        "Settings",
+
+      icon:
+        Settings,
+
+      path:
+        "/settings",
+    },
+
+  ];
 
   return (
 
@@ -44,22 +129,20 @@ export default function Sidebar() {
       w-72
       min-w-72
       h-screen
-      bg-white/5
-      backdrop-blur-xl
+      bg-[#050816]
       border-r
       border-white/10
-      p-6
       flex
       flex-col
-      shadow-2xl
     ">
 
-      <div className="mb-10">
+      <div className="
+        p-7
+      ">
 
         <h1 className="
-          text-3xl
+          text-4xl
           font-black
-          tracking-tight
           bg-gradient-to-r
           from-blue-400
           to-cyan-300
@@ -70,9 +153,9 @@ export default function Sidebar() {
         </h1>
 
         <p className="
-          text-slate-400
+          text-slate-500
+          mt-3
           text-sm
-          mt-2
         ">
           Internal Operations Platform
         </p>
@@ -80,86 +163,94 @@ export default function Sidebar() {
       </div>
 
       <nav className="
-        flex
-        flex-col
-        gap-3
+        flex-1
+        px-4
+        py-5
+        space-y-3
       ">
 
-        {menu.map((item) => {
+        {menu.map(
+          (item) => {
 
-          const Icon = item.icon;
+            const Icon =
+              item.icon;
 
-          return (
+            const active =
+              location.pathname ===
+              item.path;
 
-            <Link
-              key={item.name}
-              to={item.path}
-              className="
-                group
-                flex
-                items-center
-                gap-4
-                px-5
-                py-4
-                rounded-2xl
-                text-slate-300
-                no-underline
-                transition-all
-                duration-300
-                hover:bg-blue-600/20
-                hover:text-white
-                hover:translate-x-1
-              "
-            >
+            return (
 
-              <Icon
-                size={20}
-                className="
-                  group-hover:scale-110
+              <Link
+                key={item.name}
+                to={item.path}
+                className={`
+                  flex
+                  items-center
+                  justify-between
+                  px-5
+                  py-4
+                  rounded-2xl
                   transition
-                "
-              />
+                  border
+                  ${
+                    active
 
-              <span className="
-                font-medium
-              ">
-                {item.name}
-              </span>
+                      ? "bg-blue-600 border-blue-500 text-white"
 
-            </Link>
+                      : "border-transparent text-slate-300 hover:bg-white/5"
+                  }
+                `}
+              >
 
-          );
-        })}
+                <div className="
+                  flex
+                  items-center
+                  gap-4
+                ">
+
+                  <Icon size={20} />
+
+                  <span className="
+                    font-semibold
+                  ">
+                    {item.name}
+                  </span>
+
+                </div>
+
+                {item.badge > 0 && (
+
+                  <div className="
+                    min-w-[28px]
+                    h-7
+                    rounded-full
+                    flex
+                    items-center
+                    justify-center
+                    text-xs
+                    font-black
+                    px-2
+                    bg-red-500
+                    text-white
+                  ">
+
+                    {
+                      item.badge
+                    }
+
+                  </div>
+
+                )}
+
+              </Link>
+
+            );
+          }
+        )}
 
       </nav>
 
-      <div className="
-        mt-auto
-        bg-slate-900/70
-        border
-        border-white/10
-        rounded-3xl
-        p-5
-      ">
-
-        <p className="
-          text-sm
-          text-slate-400
-        ">
-          Workspace
-        </p>
-
-        <h3 className="
-          mt-2
-          text-lg
-          font-bold
-        ">
-          Google Operations
-        </h3>
-
-      </div>
-
     </aside>
-
   );
 }

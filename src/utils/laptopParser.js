@@ -89,18 +89,34 @@ export function parseLaptopSheets(
 
       const rows = [];
 
+      
+
+const headersLength =
+  sheet.getRow(1)
+    .cellCount;
+
       sheet.eachRow(
         {
-          includeEmpty: false,
+          includeEmpty: true,
         },
         (row) => {
 
           const cleanedRow =
-            row.values
-              .slice(1)
-              .map(
-                cleanCellValue
-              );
+            [];
+
+          for (
+            let i = 1;
+            i <= headersLength;
+            i++
+          ) {
+
+            cleanedRow.push(
+
+              cleanCellValue(
+                row.getCell(i).value
+              )
+            );
+          }
 
           rows.push(
             cleanedRow
@@ -124,11 +140,10 @@ export function parseLaptopSheets(
 
             header
               ? String(
-                  header
-                ).trim()
-              : `Column_${
-                  index + 1
-                }`
+                header
+              ).trim()
+              : `Column_${index + 1
+              }`
         );
 
       rows
@@ -171,13 +186,13 @@ export function parseLaptopSheets(
               ? "Damaged"
 
               : laptop[
-                  "Unassigned"
-                ] ===
+                "Unassigned"
+              ] ===
                 "Assigned"
 
-              ? "Assigned"
+                ? "Assigned"
 
-              : "Available";
+                : "Available";
 
           laptops.push(
             laptop

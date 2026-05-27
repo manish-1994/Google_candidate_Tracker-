@@ -189,9 +189,7 @@ export default function SheetGrid({
             headerCheckbox: true,
           }}
 
-          suppressRowClickSelection={
-            false
-          }
+         
 
           maintainColumnOrder={
             true
